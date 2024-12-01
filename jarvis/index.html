@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Voice Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+            margin: 0;
+        }
+        #chat {
+            width: 50%;
+            max-height: 60%;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background: #fff;
+            margin-bottom: 10px;
+        }
+        #message {
+            width: 50%;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #send, #speak {
+            padding: 10px 20px;
+            margin-top: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Interactive Voice Chat</h1>
+    <div id="chat"></div>
+    <input type="text" id="message" placeholder="Type your message or use voice..." />
+    <button id="send">Send</button>
+    <button id="speak">🎤 Speak</button>
+
+    <script>
+        const chat = document.getElementById('chat');
+        const messageInput = document.getElementById('message');
+        const sendButton = document.getElementById('send');
+        const speakButton = document.getElementById('speak');
+
+        // Connect to WebSocket server
+        const ws = new WebSocket('ws://localhost:8765');
+
+        ws.onopen = () => {
+            console.log("Connected to WebSocket server!");
+        };
+
+        ws.onmessage = (event) => {
+            const message = event.data;
+            const messageDiv = document.createElement('div');
+            messageDiv.textContent = "Other: " + message;
+            chat.appendChild(messageDiv);
+        };
+
+        ws.onerror = (error) => {
+            console.error("WebSocket error: ", error);
+        };
+
+        ws.onclose = () => {
+            console.log("WebSocket connection closed");
+        };
+
+        sendButton.addEventListener('click', () => {
+            const message = messageInput.value;
+            if (message) {
+                const messageDiv = document.createElement('div');
+                messageDiv.textContent = "You: " + message;
+                chat.appendChild(messageDiv);
+
+                ws.send(message);  // Send the message to the server
+                messageInput.value = '';
+            }
+        });
+
+        // Speech Recognition API
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+
+        recognition.onresult = (event) => {
+            const text = event.results[0][0].transcript;
+            messageInput.value = text;
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Speech recognition error: ", event);
+        };
+
+        speakButton.addEventListener('click', () => {
+            recognition.start();
+        });
+    </script>
+</body>
+</html>
